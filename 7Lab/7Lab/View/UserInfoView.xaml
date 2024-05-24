@@ -1,0 +1,35 @@
+﻿<Window x:Class="_7Lab.View.UserInfoView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:_7Lab.View"
+        mc:Ignorable="d"
+        Title="UserInfoView" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+
+        <Label Content="Профиль" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="30"  Grid.Row="0" Grid.Column="1"/>
+
+        <TextBlock Text="Логин" Grid.Row="1" Grid.Column="1" FontSize="24"/>
+        <TextBlock Text="{Binding Login}" Grid.Row="2" Grid.Column="1" FontSize="24"/>
+        <TextBlock Text="Роль" Grid.Row="3" Grid.Column="1" FontSize="24"/>
+        <TextBlock Text="{Binding RoleName}" Grid.Row="4" Grid.Column="1" FontSize="24"/>
+
+        <Button Content="Выйти" Command="{Binding SignOutCommand}"  Grid.Row="5" Grid.Column="1" Margin="0,30,0,30" FontSize="24"/>
+        <Button Content="Список пользователей" Command="{Binding OpenUsersListCommand}"  Grid.Row="6" Grid.Column="1" Margin="0,30,0,30" FontSize="24"/>
+    </Grid>
+</Window>

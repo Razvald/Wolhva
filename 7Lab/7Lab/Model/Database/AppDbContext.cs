@@ -28,8 +28,8 @@ namespace _7Lab.Model.Database
 
             List<Role> roles =
                 [
-                    new() { Id = 1, Title = "Worker" },
-                    new() { Id = 2, Title = "Admin" }
+                    new() { Id = 1, Name = "Worker" },
+                    new() { Id = 2, Name = "Admin" }
                 ];
 
             modelBuilder.Entity<Role>().HasData(roles);
