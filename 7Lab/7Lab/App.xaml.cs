@@ -5,6 +5,8 @@ using _7Lab.View;
 using _7Lab.ViewModel;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Runtime.InteropServices.JavaScript;
 using System.Windows;
 
 namespace _7Lab
@@ -36,8 +38,17 @@ namespace _7Lab
             base.OnStartup(e);
 
             var serviceCollection = new ServiceCollection();
+
             ConfigureServices(serviceCollection);
+
             var serviceProvider = serviceCollection.BuildServiceProvider();
+            /*
+            var viewsManager = serviceProvider.GetRequiredService<IViewsManager>();
+            var authService = serviceProvider.GetRequiredService<IAuthorizationService>();
+            var dbWorker = serviceProvider.GetRequiredService<IDbWorker>();
+
+            viewsManager.Open<LogInView>(new LogInViewModel(authService, viewsManager, dbWorker));
+            */
             var mainWindow = serviceProvider.GetRequiredService<LogInView>();
             mainWindow.DataContext = serviceProvider.GetRequiredService<LogInViewModel>();
             mainWindow.Show();

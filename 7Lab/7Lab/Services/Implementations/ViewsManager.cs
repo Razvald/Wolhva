@@ -1,4 +1,5 @@
 ﻿using _7Lab.Services.Interfaces;
+using _7Lab.View;
 using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 
@@ -19,8 +20,11 @@ namespace _7Lab.Services.Implementations
         public void Open<TView>(object? dataContext = null) where TView : Window
         {
             _current?.Close();
-            _current = _serviceProvider.GetRequiredService<TView>();
+
+            _current = ActivatorUtilities.CreateInstance<TView>(_serviceProvider);
+
             _current.DataContext = dataContext ?? _serviceProvider.GetRequiredService<TView>().DataContext;
+            
             _current.Show();
         }
     }
