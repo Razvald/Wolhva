@@ -1,4 +1,5 @@
-﻿using _8Lab.Model;
+﻿// ViewModels/MainWindowVM.cs
+using _8Lab.Model;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
 using System.Net.Http;
@@ -12,12 +13,14 @@ namespace _8Lab.ViewModel
     {
         private readonly string _accessToken = "sl.B2siDtH93JFDGiGn86P" +
             "iW6Qt9Jg7kcyVSWqpDgv2L6IVu1j-yGIR6s9S9PGaZoEkoqzx7D4G4I6h" +
-            "Gft8miTzhnFP-oM9D-cmPOjdQfcLFiSOyOngQX9RGUcRlvejUxYH3Cv-zFq0p21N";
-        private DropboxFile _selectedItem;
-        private string _currentFolderPath;
+            "Gft8miTzhnFP-oM9D-cmPOjdQfcLFiSOyOngQX9RGUcRlvejUxYH3Cv-zFq0p21N"; // Токен доступа к Dropbox API
+        private DropboxFile _selectedItem; // Текущий выбранный элемент (файл или папка)
+        private string _currentFolderPath; // Текущий путь к папке
 
+        // Коллекция файлов и папок для отображения в списке
         public ObservableCollection<DropboxFile> Items { get; set; }
 
+        // Свойство для выбранного элемента в списке
         public DropboxFile SelectedItem
         {
             get => _selectedItem;
@@ -27,11 +30,12 @@ namespace _8Lab.ViewModel
                 OnPropertyChanged(nameof(SelectedItem));
                 if (_selectedItem != null && _selectedItem.IsDirectory)
                 {
-                    LoadDirectory(_selectedItem.Path);
+                    LoadDirectory(_selectedItem.Path); // Загрузка содержимого папки при выборе папки
                 }
             }
         }
 
+        // Текущий путь к папке
         public string CurrentFolderPath
         {
             get => _currentFolderPath;
@@ -39,15 +43,18 @@ namespace _8Lab.ViewModel
             {
                 _currentFolderPath = value;
                 OnPropertyChanged(nameof(CurrentFolderPath));
-                OnPropertyChanged(nameof(DisplayCurrentFolderPath));
+                OnPropertyChanged(nameof(DisplayCurrentFolderPath)); // Обновление отображаемого пути
             }
         }
 
+        // Отображаемый текущий путь в формате "Gidsik.CiNsu.Razvald/.../название_папки"
         public string DisplayCurrentFolderPath => $"Gidsik.CiNsu.Razvald{_currentFolderPath}";
 
+        // Команды для загрузки корневой папки и перехода назад
         public ICommand LoadRootCommand { get; }
         public ICommand BackCommand { get; }
 
+        // Конструктор
         public MainWindowVM()
         {
             Items = new ObservableCollection<DropboxFile>();
@@ -55,48 +62,51 @@ namespace _8Lab.ViewModel
             BackCommand = new RelayCommand(Back);
         }
 
+        // Метод для загрузки корневой папки
         private async Task LoadRoot()
         {
-            CurrentFolderPath = string.Empty;
-            Items.Clear();
-            var rootItems = await ListFolderAsync(string.Empty);
+            CurrentFolderPath = string.Empty; // Установка пути как корневого
+            Items.Clear(); // Очистка текущего списка элементов
+            var rootItems = await ListFolderAsync(string.Empty); // Получение списка элементов корневой папки
             foreach (var item in rootItems)
             {
-                Items.Add(item);
+                Items.Add(item); // Добавление элементов в коллекцию для отображения
             }
         }
 
+        // Метод для загрузки содержимого папки по заданному пути
         private async Task LoadDirectory(string path)
         {
-            CurrentFolderPath = path;
-            Items.Clear();
-            var directoryItems = await ListFolderAsync(path);
+            Items.Clear(); // Очистка текущего списка элементов
+            var directoryItems = await ListFolderAsync(path); // Получение списка элементов папки
             foreach (var item in directoryItems)
             {
-                Items.Add(item);
+                Items.Add(item); // Добавление элементов в коллекцию для отображения
             }
         }
 
-        private void Back(object? parameter)
+        // Метод для перехода назад по пути
+        private void Back(object? parameters)
         {
             if (string.IsNullOrEmpty(CurrentFolderPath) || CurrentFolderPath == "/")
             {
-                return;
+                return; // Если путь пустой или корневой, выход из метода
             }
 
-            var parts = CurrentFolderPath.Split('/');
+            var parts = CurrentFolderPath.Split('/'); // Разделение пути на части
             if (parts.Length <= 1)
             {
-                CurrentFolderPath = string.Empty;
+                CurrentFolderPath = string.Empty; // Если в пути только один элемент, установка его как корневого
             }
             else
             {
-                CurrentFolderPath = string.Join("/", parts.Take(parts.Length - 1));
+                CurrentFolderPath = string.Join("/", parts.Take(parts.Length - 1)); // Установка пути без последнего элемента
             }
 
-            _ = LoadDirectory(CurrentFolderPath);
+            _ = LoadDirectory(CurrentFolderPath); // Загрузка содержимого папки по новому пути
         }
 
+        // Метод для получения списка элементов папки из Dropbox API
         private async Task<ObservableCollection<DropboxFile>> ListFolderAsync(string path)
         {
             var items = new ObservableCollection<DropboxFile>();

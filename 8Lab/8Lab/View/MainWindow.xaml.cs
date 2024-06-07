@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿// MainWindow.xaml.cs
+using System.Windows;
 
 namespace _8Lab.View
 {
@@ -6,7 +7,7 @@ namespace _8Lab.View
     {
         public MainWindow()
         {
-            InitializeComponent();
+            InitializeComponent(); // Инициализация компонентов окна
         }
     }
 }
