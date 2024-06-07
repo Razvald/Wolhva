@@ -14,8 +14,7 @@
         </Grid.RowDefinitions>
 
         <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="5">
-            <Button Content="Назад" Command="{Binding BackCommand}" Margin="5"/>
-            <Button Content="Открыть папку" Command="{Binding OpenFolderCommand}" Margin="5"/>
+            <Button Content="Back" Command="{Binding BackCommand}" Margin="5"/>
             <Button Content="Load Root" Command="{Binding LoadRootCommand}" Margin="5"/>
         </StackPanel>
 
@@ -30,6 +29,5 @@
                 </DataTemplate>
             </ListBox.ItemTemplate>
         </ListBox>
-
     </Grid>
 </Window>
