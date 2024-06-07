@@ -58,30 +58,19 @@ namespace _8Lab.ViewModel
         public MainWindowVM()
         {
             Items = new ObservableCollection<DropboxFile>();
-            LoadRootCommand = new RelayCommand(async _ => await LoadRoot());
+            LoadRootCommand = new RelayCommand(async _ => await LoadDirectory(string.Empty));
             BackCommand = new RelayCommand(Back);
-        }
-
-        // Метод для загрузки корневой папки
-        private async Task LoadRoot()
-        {
-            CurrentFolderPath = string.Empty; // Установка пути как корневого
-            Items.Clear(); // Очистка текущего списка элементов
-            var rootItems = await ListFolderAsync(string.Empty); // Получение списка элементов корневой папки
-            foreach (var item in rootItems)
-            {
-                Items.Add(item); // Добавление элементов в коллекцию для отображения
-            }
         }
 
         // Метод для загрузки содержимого папки по заданному пути
         private async Task LoadDirectory(string path)
         {
-            Items.Clear(); // Очистка текущего списка элементов
-            var directoryItems = await ListFolderAsync(path); // Получение списка элементов папки
+            CurrentFolderPath = path;
+            Items.Clear();
+            var directoryItems = await ListFolderAsync(path);
             foreach (var item in directoryItems)
             {
-                Items.Add(item); // Добавление элементов в коллекцию для отображения
+                Items.Add(item);
             }
         }
 
@@ -107,25 +96,44 @@ namespace _8Lab.ViewModel
         }
 
         // Метод для получения списка элементов папки из Dropbox API
-        private async Task<ObservableCollection<DropboxFile>> ListFolderAsync(string path)
+        private async Task<ObservableCollection<DropboxFile>> ListFolderAsync(string path) 
+            /// Этот метод возвращает ObservableCollection<DropboxFile>, 
+            /// представляющую коллекцию файлов и папок в указанном пути. 
+            /// Метод является асинхронным, поэтому использует ключевое слово async.
         {
             var items = new ObservableCollection<DropboxFile>();
-
+            /// Создается пустая коллекция ObservableCollection<DropboxFile>, 
+            /// в которую будут добавляться файлы и папки.
             using (var httpClient = new HttpClient())
+            /// Создаётся экземпляр HttpClient, который будет 
+            /// использоваться для выполнения HTTP-запроса к Dropbox API.
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-
+                /// Устанавливается заголовок авторизации с типом Bearer и значением 
+                /// _accessToken. Это необходимо для аутентификации запроса с 
+                /// использованием токена доступа к Dropbox.
                 var content = new StringContent(
                     $"{{\"path\": \"{path}\", \"recursive\": false}}",
                     Encoding.UTF8, "application/json");
-
+                /// Создается объект StringContent, представляющий тело 
+                /// запроса в формате JSON. Тело запроса содержит путь path 
+                /// к каталогу, который нужно просмотреть, и параметр recursive, 
+                /// установленный в false. Это означает, что содержимое будет 
+                /// запрашиваться только для указанного каталога, без рекурсивного 
+                /// просмотра вложенных папок.
                 var response = await httpClient.PostAsync("https://api.dropboxapi.com/2/files/list_folder", content);
-
+                /// Асинхронно отправляется POST-запрос к Dropbox 
+                /// API по адресу https://api.dropboxapi.com/2/files/list_folder 
+                /// с ранее созданным содержимым. Метод await используется 
+                /// для ожидания завершения запроса без блокировки потока.
                 if (response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadAsStringAsync();
                     var json = JObject.Parse(responseContent);
-
+                    /// Если статус ответа указывает на успех 
+                    /// (IsSuccessStatusCode равно true), содержимое 
+                    /// ответа читается как строка и парсится в объект 
+                    /// JObject для дальнейшей обработки.
                     foreach (var entry in json["entries"])
                     {
                         var item = new DropboxFile
@@ -136,6 +144,10 @@ namespace _8Lab.ViewModel
                         };
                         items.Add(item);
                     }
+                    /// Проходит итерация по всем элементам в массиве entries 
+                    /// внутри JSON-ответа. Для каждого элемента создается 
+                    /// объект DropboxFile, заполняются его свойства (имя, путь, тип), 
+                    /// и этот объект добавляется в коллекцию items.
                 }
                 else
                 {
@@ -143,8 +155,12 @@ namespace _8Lab.ViewModel
                     var errorMessage = await response.Content.ReadAsStringAsync();
                     throw new HttpRequestException($"Request failed with status code {response.StatusCode}: {errorMessage}");
                 }
+                /// Если статус ответа указывает на ошибку, содержимое 
+                /// ответа читается как строка, и выбрасывается исключение 
+                /// HttpRequestException с сообщением об ошибке, 
+                /// включающим статусный код и содержимое ответа.
             }
-            return items;
+            return items; // Возвращается заполненная коллекция ObservableCollection<DropboxFile>.
         }
     }
 }
