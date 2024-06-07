@@ -1,5 +1,4 @@
-﻿<!-- MainWindow.xaml -->
-<Window x:Class="_8Lab.View.MainWindow"
+﻿<Window x:Class="_8Lab.View.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -9,22 +8,21 @@
         Title="MainWindow" Height="450" Width="800">
     <Grid>
         <Grid.RowDefinitions>
-            <!-- Определяем три строки в сетке: две для кнопок и текущего пути, одна для списка -->
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Панель с кнопками "Назад" и "Загрузить корень" -->
         <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="5">
-            <Button Content="Back" Command="{Binding BackCommand}" Margin="5"/>
+            <Button Content="Back in folder" Command="{Binding BackCommand}" Margin="5"/>
             <Button Content="Load Root" Command="{Binding LoadRootCommand}" Margin="5"/>
+            <!--<Button Content="Delete Selected File" Command="{Binding DeleteSelectedFileCommand}" Margin="5"/>-->
         </StackPanel>
 
-        <!-- Текстовый блок для отображения текущего пути -->
-        <TextBlock Text="{Binding DisplayCurrentFolderPath}" Grid.Row="1" Margin="5"/>
+        <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="5">
+            <TextBlock Text="{Binding DisplayCurrentFolderPath}" Margin="5"/>
+        </StackPanel>
 
-        <!-- Список для отображения файлов и папок -->
         <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" Grid.Row="2">
             <ListBox.ItemTemplate>
                 <DataTemplate>
