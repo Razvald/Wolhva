@@ -3,7 +3,7 @@
     public class DropboxFile
     {
         public string Name { get; set; }
-        public bool IsFolder { get; set; }
-        public string PathLower { get; set; }
+        public string Path { get; set; }
+        public bool IsDirectory { get; set; }
     }
 }

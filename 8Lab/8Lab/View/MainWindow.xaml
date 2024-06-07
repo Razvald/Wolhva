@@ -16,19 +16,20 @@
         <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="5">
             <Button Content="Назад" Command="{Binding BackCommand}" Margin="5"/>
             <Button Content="Открыть папку" Command="{Binding OpenFolderCommand}" Margin="5"/>
-            <Button Content="Загрузить файлы" Command="{Binding LoadCommand}" Margin="5"/>
+            <Button Content="Load Root" Command="{Binding LoadRootCommand}" Margin="5"/>
         </StackPanel>
 
         <TextBlock Text="{Binding DisplayCurrentFolderPath}" Grid.Row="1" Margin="5"/>
 
-        <ListView ItemsSource="{Binding Files}" SelectedItem="{Binding SelectedFile}" Grid.Row="2">
-            <ListView.View>
-                <GridView>
-                    <GridViewColumn Header="Name" DisplayMemberBinding="{Binding Name}" Width="200"/>
-                    <GridViewColumn Header="IsFolder" DisplayMemberBinding="{Binding IsFolder}" Width="100"/>
-                </GridView>
-            </ListView.View>
-        </ListView>
+        <ListBox ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}" Grid.Row="2">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Name}" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
 
     </Grid>
 </Window>

@@ -1,14 +1,116 @@
 ﻿using _8Lab.Model;
-using Dropbox.Api;
+using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
-using System.IO;
-using System.Windows;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
 using System.Windows.Input;
 
 namespace _8Lab.ViewModel
 {
     public class MainWindowVM : ViewModelBase
     {
+        private readonly string _accessToken = "sl.B2siDtH93JFDGiGn86P" +
+            "iW6Qt9Jg7kcyVSWqpDgv2L6IVu1j-yGIR6s9S9PGaZoEkoqzx7D4G4I6h" +
+            "Gft8miTzhnFP-oM9D-cmPOjdQfcLFiSOyOngQX9RGUcRlvejUxYH3Cv-zFq0p21N";
+        private DropboxFile _selectedItem;
+
+        public ObservableCollection<DropboxFile> Items { get; set; }
+
+        public DropboxFile SelectedItem
+        {
+            get => _selectedItem;
+            set
+            {
+                _selectedItem = value;
+                OnPropertyChanged(nameof(SelectedItem));
+                if (_selectedItem != null && _selectedItem.IsDirectory)
+                {
+                    LoadDirectory(_selectedItem.Path);
+                }
+            }
+        }
+
+        public ICommand LoadRootCommand { get; }
+
+        public MainWindowVM()
+        {
+            Items = new ObservableCollection<DropboxFile>();
+            LoadRootCommand = new RelayCommand(async _ => await LoadRoot());
+        }
+
+        private async Task LoadRoot()
+        {
+            Items.Clear();
+            var rootItems = await ListFolderAsync(string.Empty);
+            foreach (var item in rootItems)
+            {
+                Items.Add(item);
+            }
+        }
+
+        private async Task LoadDirectory(string path)
+        {
+            Items.Clear();
+            var directoryItems = await ListFolderAsync(path);
+            foreach (var item in directoryItems)
+            {
+                Items.Add(item);
+            }
+        }
+
+        private async Task<ObservableCollection<DropboxFile>> ListFolderAsync(string path)
+        {
+            var items = new ObservableCollection<DropboxFile>();
+            
+            using (var httpClient = new HttpClient())
+            {
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                
+                var content = new StringContent(
+                    $"{{\"path\": \"{path}\", \"recursive\": false}}"
+                    , Encoding.UTF8, "application/json");
+                
+                var response = await httpClient.PostAsync("https://api.dropboxapi.com/2/files/list_folder", content);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseContent = await response.Content.ReadAsStringAsync();
+                    var json = JObject.Parse(responseContent);
+
+                    foreach (var entry in json["entries"])
+                    {
+                        var item = new DropboxFile
+                        {
+                            Name = entry["name"].ToString(),
+                            Path = entry["path_lower"].ToString(),
+                            IsDirectory = entry[".tag"].ToString() == "folder"
+                        };
+                        items.Add(item);
+                    }
+                }
+                else
+                {
+                    // Обработка ошибок
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    throw new HttpRequestException($"Request failed with status code {response.StatusCode}: {errorMessage}");
+                }
+            }
+            return items;
+        }
+
+
+
+
+
+
+
+
+
+
+
+        /*
+
         private readonly string _accessToken = "sl.B2QvT5h17uMtla71pPE-0gWYTw" +
             "nckCy0tQyscpCBWw1vNL4K_AhLcyDPcJOaKVJRhg5mjPVpjKFRZGnGJ16xQ3DDR7" +
             "tyPrXCzcIF4FVC8iox_tCIsOdfyx-vMKbxDq2WGXoxTUGOGjic";
@@ -124,6 +226,6 @@ namespace _8Lab.ViewModel
 
             LoadFilesAsync(CurrentFolderPath);
             OnPropertyChanged(nameof(DisplayCurrentFolderPath));
-        }
+        }*/
     }
 }
