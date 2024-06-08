@@ -17,7 +17,7 @@
             <Button Content="Back in folder" Command="{Binding BackCommand}" Margin="5"/>
             <Button Content="Load Root" Command="{Binding LoadRootCommand}" Margin="5"/>
             <Button Content="Delete Selected File" Command="{Binding DeleteSelectedFileCommand}" Margin="5"/>
-            <Button Content="Info Selected File" Command="{Binding InfoSelectedFileCommand}" Margin="5"/>
+            <Button Content="Add New File" Command="{Binding UploadFileCommand}" Margin="5"/>
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="5">

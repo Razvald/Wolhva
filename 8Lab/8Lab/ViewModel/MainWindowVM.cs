@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Windows;
 using System.Windows.Input;
 
@@ -50,7 +49,7 @@ namespace _8Lab.ViewModel
         public ICommand LoadRootCommand { get; }
         public ICommand BackCommand { get; }
         public ICommand DeleteSelectedFileCommand { get; }
-        public ICommand InfoSelectedFileCommand { get; }
+        public ICommand UploadFileCommand { get; }
 
         public MainWindowVM()
         {
@@ -58,7 +57,7 @@ namespace _8Lab.ViewModel
             LoadRootCommand = new RelayCommand(async _ => await LoadDirectory(string.Empty));
             BackCommand = new RelayCommand(Back);
             DeleteSelectedFileCommand = new RelayCommand(async _ => await DeleteSelectedFile());
-            InfoSelectedFileCommand = new RelayCommand(InfoSelectedFile);
+            UploadFileCommand = new RelayCommand(async _ => await UploadFile());
         }
 
         private async Task LoadDirectory(string path)
@@ -92,14 +91,25 @@ namespace _8Lab.ViewModel
             _ = LoadDirectory(CurrentFolderPath);
         }
 
-        private void InfoSelectedFile(object? parameters)
+        private async Task UploadFile()
         {
-            MessageBox.Show(SelectedItem.Name + "\n" + SelectedItem.Path);
+
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+            var responseJson = await httpClient.PostAsJsonAsync(
+                requestUri: "https://content.dropboxapi.com/2/files/upload",
+                value: new
+                {
+                    autorename = true,
+                    path = _currentFolderPath
+                }
+            );
         }
 
         private async Task DeleteSelectedFile()
         {
-            var result = MessageBox.Show($"Вы уверены, что хотите удалить файл: {SelectedItem.Path}?",
+            var result = MessageBox.Show($"Вы уверены, что хотите удалить файл: {SelectedItem.Name}?",
                                          "Подтверждение удаления",
                                          MessageBoxButton.YesNo,
                                          MessageBoxImage.Warning);
