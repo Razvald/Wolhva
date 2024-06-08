@@ -1,19 +1,22 @@
 ﻿using _8Lab.Model;
+using _8Lab.View;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text;
+using System.Windows;
 using System.Windows.Input;
 
 namespace _8Lab.ViewModel
 {
     public class MainWindowVM : ViewModelBase
     {
-        private readonly string _accessToken = "sl.B2uJUjysrHW-Y7L5bhdC" +
-            "gqkVvjszYeqwvPc9DT89GS8KQ2dXos6cPIy2dBpwwCQsxmqN-2amoyl_Cj" +
-            "HHK_4z3tF-Bst7DHkt_G5YXFQ_HojpI4MYgXbvOoV2xHp6w1Yf5vzLGKj_" +
-            "hfXCJBdmgXYSs6g";
+        private readonly string _accessToken = "sl.B2wEOXScuVA-e7IGeiX1v" +
+            "MQ186hgYPqJnNOMqTqgO1lGD6gqi8U0YwS1C5XspT3-0sDdgW2rISms67SZ" +
+            "v2AQ6tRTAnG7Dw5qCS6Ahw5g2jpqtPt3Y4kURYuajY9keRrULVwIGwL3-ab" +
+            "rAdOGVTNzmuQ";
         private DropboxFile _selectedItem;
         private string _currentFolderPath;
 
@@ -48,14 +51,18 @@ namespace _8Lab.ViewModel
 
         public ICommand LoadRootCommand { get; }
         public ICommand BackCommand { get; }
-        //public ICommand DeleteSelectedFileCommand { get; }
+        public ICommand DeleteSelectedFileCommand { get; }
+        public ICommand UploadFileCommand { get; }
 
         public MainWindowVM()
         {
             Items = new ObservableCollection<DropboxFile>();
             LoadRootCommand = new RelayCommand(async _ => await LoadDirectory(string.Empty));
             BackCommand = new RelayCommand(Back);
-            //DeleteSelectedFileCommand = new RelayCommand(async _ => await );
+            DeleteSelectedFileCommand = new RelayCommand(async _ => await DeleteSelectedFile());
+            UploadFileCommand = new RelayCommand(async _ => await UploadFile());
+
+            _currentFolderPath = "";
         }
 
         private async Task LoadDirectory(string path)
@@ -89,21 +96,96 @@ namespace _8Lab.ViewModel
             _ = LoadDirectory(CurrentFolderPath);
         }
 
-        private async Task<ObservableCollection<DropboxFile>> ListFolderAsync(string path)
+        private async Task UploadFile()
+        {
+            var inputDialog = new InputDialog
+            {
+                DataContext = new InputDialogVM()
+            };
 
+            if (inputDialog.ShowDialog() == true)
+            {
+                var inputDialogVM = (InputDialogVM)inputDialog.DataContext;
+                string fileName = inputDialogVM.ResponseText;
+
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+                var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes("Пример содержимого файла"));
+                fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://content.dropboxapi.com/2/files/upload")
+                {
+                    Headers =
+                    {
+                        { "Dropbox-API-Arg", 
+                            $"{{\"path\": \"{_currentFolderPath}/{fileName}\",\"mode\": \"add\",\"autorename\": true,\"mute\": false,\"strict_conflict\": false}}" }
+                    },
+                    Content = fileContent
+                };
+
+                var response = await httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = await response.Content.ReadAsStringAsync();
+                    MessageBox.Show($"{jsonResponse}\n");
+                }
+                else
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    throw new HttpRequestException($"Request failed with status code {response.StatusCode}: {errorMessage}");
+                }
+            }
+            else
+            {
+                MessageBox.Show("Загрузка отменена.");
+            }
+        }
+
+        private async Task DeleteSelectedFile()
+        {
+            var result = MessageBox.Show($"Вы уверены, что хотите удалить файл: {SelectedItem.Name}?",
+                                         "Подтверждение удаления",
+                                         MessageBoxButton.YesNo,
+                                         MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Authorization = 
+                    new AuthenticationHeaderValue("Bearer", _accessToken);
+
+                var responseJson = await httpClient.PostAsJsonAsync(
+                    requestUri: "https://api.dropboxapi.com/2/files/delete_v2",
+                    value: new
+                    {
+                        path = SelectedItem.Path.ToString()
+                    }
+                );
+            }
+            else
+            {
+                MessageBox.Show("Удаление отменено.");
+            }
+        }
+
+        private async Task<ObservableCollection<DropboxFile>> ListFolderAsync(string path)
         {
             var items = new ObservableCollection<DropboxFile>();
 
             using (var httpClient = new HttpClient())
-
             {
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
-                var content = new StringContent(
-                    $"{{\"path\": \"{path}\", \"recursive\": false}}",
-                    Encoding.UTF8, "application/json");
-
-                var response = await httpClient.PostAsync("https://api.dropboxapi.com/2/files/list_folder", content);
+                var response = await httpClient
+                    .PostAsJsonAsync(
+                    requestUri: "https://api.dropboxapi.com/2/files/list_folder",
+                    value: new
+                    {
+                        path
+                    }
+                );
 
                 if (response.IsSuccessStatusCode)
                 {
@@ -120,14 +202,7 @@ namespace _8Lab.ViewModel
                         };
                         items.Add(item);
                     }
-
                 }
-                else
-                {
-                    var errorMessage = await response.Content.ReadAsStringAsync();
-                    throw new HttpRequestException($"Request failed with status code {response.StatusCode}: {errorMessage}");
-                }
-
             }
             return items;
         }

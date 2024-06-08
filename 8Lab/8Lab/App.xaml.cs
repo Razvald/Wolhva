@@ -16,6 +16,9 @@ namespace _8Lab
             serviceCollection.AddSingleton<MainWindow>();
             serviceCollection.AddSingleton<MainWindowVM>();
 
+            serviceCollection.AddSingleton<InputDialog>();
+            serviceCollection.AddSingleton<InputDialogVM>();
+
             var serviceProvider = serviceCollection.BuildServiceProvider();
 
             var mainWindow = serviceProvider.GetRequiredService<MainWindow>();

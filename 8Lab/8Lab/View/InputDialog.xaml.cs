@@ -2,9 +2,9 @@
 
 namespace _8Lab.View
 {
-    public partial class MainWindow : Window
+    public partial class InputDialog : Window
     {
-        public MainWindow()
+        public InputDialog()
         {
             InitializeComponent();
         }

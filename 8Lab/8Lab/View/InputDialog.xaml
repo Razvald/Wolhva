@@ -1,0 +1,15 @@
+﻿<Window x:Class="_8Lab.View.InputDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:_8Lab.View"
+        mc:Ignorable="d"
+        Title="InputDialog" Height="150" Width="300">
+    <Grid>
+        <Label Content="Назовите новый файл:" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10"/>
+        <TextBox Text="{Binding ResponseText}" HorizontalAlignment="Left" Height="23" Margin="10,30,10,0" VerticalAlignment="Top" Width="260"/>
+        <Button Content="OK" Command="{Binding ConfirmCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" HorizontalAlignment="Left" Margin="60,70,0,0" VerticalAlignment="Top" Width="75"/>
+        <Button Content="Cancel" Command="{Binding CancelCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType=Window}}" HorizontalAlignment="Left" Margin="150,70,0,0" VerticalAlignment="Top" Width="75"/>
+    </Grid>
+</Window>
