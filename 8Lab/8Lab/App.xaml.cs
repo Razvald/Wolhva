@@ -19,13 +19,36 @@ namespace _8Lab
             serviceCollection.AddSingleton<InputDialog>();
             serviceCollection.AddSingleton<InputDialogVM>();
 
+            serviceCollection.AddSingleton<AuthDialog>();
+            serviceCollection.AddSingleton<AuthDialogVM>();
+
             var serviceProvider = serviceCollection.BuildServiceProvider();
+            /*
+            var authDialog = serviceProvider.GetRequiredService<AuthDialog>();
 
-            var mainWindow = serviceProvider.GetRequiredService<MainWindow>();
-
-            mainWindow.DataContext = serviceProvider.GetRequiredService<MainWindowVM>();
+            authDialog.DataContext = serviceProvider.GetRequiredService<AuthDialogVM>();
             
+            if (authDialog.ShowDialog() == true)
+            {
+            // Получение токена доступа после авторизации
+            var accessToken = AuthDialogVM.AccessToken;*/
+            var accessToken = "sl.B3JwpUkfBxc" +
+                "TUisIa21YeWBusVhvi3aW0ixCJYe" +
+                "hFEryKp78YB_oGgrUnrstWezvAqm" +
+                "ljAHArRuR7KqSWBXVx4ae72GPFps" +
+                "AmZGzfDcThTeKZGbiFKWWrPMoXhV" +
+                "U-4sUihr24B7KI2Hnf21D38o910k";
+
+            // Создание MainWindowVM с токеном доступа
+            var mainWindowVM = new MainWindowVM(accessToken);
+            var mainWindow = serviceProvider.GetRequiredService<MainWindow>();
+            mainWindow.DataContext = mainWindowVM;
             mainWindow.Show();
+            /*}
+            else
+            {
+                Shutdown();
+            }*/
         }
     }
 }

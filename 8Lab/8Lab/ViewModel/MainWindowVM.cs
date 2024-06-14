@@ -1,11 +1,10 @@
 ﻿using _8Lab.Model;
-using _8Lab.View;
 using Newtonsoft.Json.Linq;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text;
 using System.Windows;
 using System.Windows.Input;
 
@@ -13,10 +12,7 @@ namespace _8Lab.ViewModel
 {
     public class MainWindowVM : ViewModelBase
     {
-        private readonly string _accessToken = "sl.B2wEOXScuVA-e7IGeiX1v" +
-            "MQ186hgYPqJnNOMqTqgO1lGD6gqi8U0YwS1C5XspT3-0sDdgW2rISms67SZ" +
-            "v2AQ6tRTAnG7Dw5qCS6Ahw5g2jpqtPt3Y4kURYuajY9keRrULVwIGwL3-ab" +
-            "rAdOGVTNzmuQ";
+        private readonly string _accessToken;
         private DropboxFile _selectedItem;
         private string _currentFolderPath;
 
@@ -47,19 +43,23 @@ namespace _8Lab.ViewModel
             }
         }
 
-        public string DisplayCurrentFolderPath => $"Текущий путь: //Gidsik.CiNsu.Razvald{_currentFolderPath}";
+        public string DisplayCurrentFolderPath => $"Текущий путь: {CurrentFolderPath}";
 
-        public ICommand LoadRootCommand { get; }
         public ICommand BackCommand { get; }
+        public ICommand ForwardCommand { get; }
         public ICommand DeleteSelectedFileCommand { get; }
+        public ICommand DownloadFileCommand { get; }
         public ICommand UploadFileCommand { get; }
 
-        public MainWindowVM()
+        public MainWindowVM(string accessToken)
         {
-            Items = new ObservableCollection<DropboxFile>();
-            LoadRootCommand = new RelayCommand(async _ => await LoadDirectory(string.Empty));
+            _accessToken = accessToken;
+            Items = [];
+            LoadDirectory(string.Empty);
             BackCommand = new RelayCommand(Back);
+            ForwardCommand = new RelayCommand(Forward);
             DeleteSelectedFileCommand = new RelayCommand(async _ => await DeleteSelectedFile());
+            DownloadFileCommand = new RelayCommand(async _ => await DownloadFile());
             UploadFileCommand = new RelayCommand(async _ => await UploadFile());
 
             _currentFolderPath = "";
@@ -76,13 +76,17 @@ namespace _8Lab.ViewModel
             }
         }
 
-        private void Back(object? parameters)
+        private Stack<string> _backStack = new Stack<string>();
+        private Stack<string> _forwardStack = new Stack<string>();
+
+        private void Back(object? parameter)
         {
             if (string.IsNullOrEmpty(CurrentFolderPath) || CurrentFolderPath == "/")
             {
                 return;
             }
 
+            _forwardStack.Push(CurrentFolderPath);
             var parts = CurrentFolderPath.Split('/');
             if (parts.Length <= 1)
             {
@@ -93,34 +97,191 @@ namespace _8Lab.ViewModel
                 CurrentFolderPath = string.Join("/", parts.Take(parts.Length - 1));
             }
 
+            _backStack.Push(CurrentFolderPath);
             _ = LoadDirectory(CurrentFolderPath);
+        }
+
+        private void Forward(object? parameter)
+        {
+            if (_forwardStack.Count == 0) return;
+
+            var nextPath = _forwardStack.Pop();
+            _backStack.Push(CurrentFolderPath);
+            CurrentFolderPath = nextPath;
+            _ = LoadDirectory(CurrentFolderPath);
+        }
+
+        //private async Task UploadFile()
+        //{
+        //    var inputDialog = new InputDialog
+        //    {
+        //        DataContext = new InputDialogVM()
+        //    };
+
+        //    if (inputDialog.ShowDialog() == true)
+        //    {
+        //        var inputDialogVM = (InputDialogVM)inputDialog.DataContext;
+        //        string fileName = inputDialogVM.ResponseText;
+
+        //        using var httpClient = new HttpClient();
+        //        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+        //        var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes("Пример содержимого файла"));
+        //        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+        //        var request = new HttpRequestMessage(HttpMethod.Post, "https://content.dropboxapi.com/2/files/upload")
+        //        {
+        //            Headers =
+        //            {
+        //                { "Dropbox-API-Arg",
+        //                    $"{{\"path\": \"{_currentFolderPath}/{fileName}\",\"mode\": \"add\",\"autorename\": true,\"mute\": false,\"strict_conflict\": false}}" }
+        //            },
+        //            Content = fileContent
+        //        };
+
+        //        var response = await httpClient.SendAsync(request);
+
+        //        if (response.IsSuccessStatusCode)
+        //        {
+        //            var jsonResponse = await response.Content.ReadAsStringAsync();
+        //            MessageBox.Show($"{jsonResponse}\n");
+        //            _ = LoadDirectory(CurrentFolderPath); // Refresh the directory after upload
+        //        }
+        //        else
+        //        {
+        //            var errorMessage = await response.Content.ReadAsStringAsync();
+        //            throw new HttpRequestException($"Request failed with status code {response.StatusCode}: {errorMessage}");
+        //        }
+        //    }
+        //    else
+        //    {
+        //        MessageBox.Show("Загрузка отменена.");
+        //    }
+        //}
+
+        private async Task DownloadFile()
+        {
+            if (SelectedItem != null && !SelectedItem.IsDirectory)
+            {
+                using var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+                var downloadPath = SelectedItem.Path;
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://content.dropboxapi.com/2/files/download")
+                {
+                    Headers =
+                    {
+                        { "Dropbox-API-Arg", $"{{\"path\":\"{downloadPath}\"}}" }
+                    }
+                };
+
+                var response = await httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // Чтение потока содержимого файла
+                    var contentStream = await response.Content.ReadAsStreamAsync();
+
+                    // Получение имени файла из пути (используется как предложение для сохранения файла)
+                    var fileName = Path.GetFileName(downloadPath);
+
+                    // Диалоговое окно для сохранения файла
+                    var saveFileDialog = new Microsoft.Win32.SaveFileDialog
+                    {
+                        FileName = fileName,
+                        Filter = "All Files (*.*)|*.*",
+                        Title = "Сохранить файл"
+                    };
+
+                    // Открытие диалогового окна сохранения файла и сохранение, если пользователь согласен
+                    if (saveFileDialog.ShowDialog() == true)
+                    {
+                        // Открытие потока для записи содержимого файла
+                        using (var fileStream = new FileStream(saveFileDialog.FileName, FileMode.Create, FileAccess.Write))
+                        {
+                            await contentStream.CopyToAsync(fileStream);
+                        }
+                        MessageBox.Show("Файл успешно сохранен.");
+                    }
+                    else
+                    {
+                        // Если пользователь отменил операцию сохранения
+                        MessageBox.Show("Скачивание файла отменено.");
+                    }
+                }
+                else
+                {
+                    var errorMessage = await response.Content.ReadAsStringAsync();
+                    MessageBox.Show($"Ошибка при скачивании файла: {errorMessage}");
+                }
+            }
+        }
+
+        private async Task DeleteSelectedFile()
+        {
+            if (SelectedItem != null)
+            {
+                var result = MessageBox.Show($"Вы уверены, что хотите удалить файл: {SelectedItem.Name}?",
+                                             "Подтверждение удаления",
+                                             MessageBoxButton.YesNo,
+                                             MessageBoxImage.Warning);
+
+                if (result == MessageBoxResult.Yes)
+                {
+                    using var httpClient = new HttpClient();
+                    httpClient.DefaultRequestHeaders.Authorization =
+                        new AuthenticationHeaderValue("Bearer", _accessToken);
+
+                    var responseJson = await httpClient.PostAsJsonAsync(
+                        requestUri: "https://api.dropboxapi.com/2/files/delete_v2",
+                        value: new
+                        {
+                            path = SelectedItem.Path.ToString()
+                        }
+                    );
+
+                    if (responseJson.IsSuccessStatusCode)
+                    {
+                        MessageBox.Show($"Файл {SelectedItem.Name} удален.");
+                        _ = LoadDirectory(CurrentFolderPath);
+                    }
+                    else
+                    {
+                        var errorMessage = await responseJson.Content.ReadAsStringAsync();
+                        throw new HttpRequestException($"Request failed with status code {responseJson.StatusCode}: {errorMessage}");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("Удаление отменено.");
+                }
+            }
         }
 
         private async Task UploadFile()
         {
-            var inputDialog = new InputDialog
+            var openFileDialog = new Microsoft.Win32.OpenFileDialog
             {
-                DataContext = new InputDialogVM()
+                Title = "Выберите файл для загрузки",
+                Filter = "All Files (*.*)|*.*"
             };
 
-            if (inputDialog.ShowDialog() == true)
+            if (openFileDialog.ShowDialog() == true)
             {
-                var inputDialogVM = (InputDialogVM)inputDialog.DataContext;
-                string fileName = inputDialogVM.ResponseText;
-
                 using var httpClient = new HttpClient();
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
-                var fileContent = new ByteArrayContent(Encoding.UTF8.GetBytes("Пример содержимого файла"));
+                var fileContent = new ByteArrayContent(File.ReadAllBytes(openFileDialog.FileName));
+                var fileName = Path.GetFileName(openFileDialog.FileName);
+
                 fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
                 var request = new HttpRequestMessage(HttpMethod.Post, "https://content.dropboxapi.com/2/files/upload")
                 {
                     Headers =
-                    {
-                        { "Dropbox-API-Arg", 
-                            $"{{\"path\": \"{_currentFolderPath}/{fileName}\",\"mode\": \"add\",\"autorename\": true,\"mute\": false,\"strict_conflict\": false}}" }
-                    },
+                {
+                    { "Dropbox-API-Arg", $"{{\"path\": \"{CurrentFolderPath}/{fileName}\",\"mode\": \"add\",\"autorename\": true,\"mute\": false,\"strict_conflict\": false}}" }
+                },
                     Content = fileContent
                 };
 
@@ -128,45 +289,14 @@ namespace _8Lab.ViewModel
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var jsonResponse = await response.Content.ReadAsStringAsync();
-                    MessageBox.Show($"{jsonResponse}\n");
+                    MessageBox.Show("Файл успешно загружен на Dropbox.");
+                    _ = LoadDirectory(CurrentFolderPath); // Обновление содержимого текущей папки
                 }
                 else
                 {
                     var errorMessage = await response.Content.ReadAsStringAsync();
-                    throw new HttpRequestException($"Request failed with status code {response.StatusCode}: {errorMessage}");
+                    MessageBox.Show($"Ошибка при загрузке файла на Dropbox: {errorMessage}");
                 }
-            }
-            else
-            {
-                MessageBox.Show("Загрузка отменена.");
-            }
-        }
-
-        private async Task DeleteSelectedFile()
-        {
-            var result = MessageBox.Show($"Вы уверены, что хотите удалить файл: {SelectedItem.Name}?",
-                                         "Подтверждение удаления",
-                                         MessageBoxButton.YesNo,
-                                         MessageBoxImage.Warning);
-
-            if (result == MessageBoxResult.Yes)
-            {
-                using var httpClient = new HttpClient();
-                httpClient.DefaultRequestHeaders.Authorization = 
-                    new AuthenticationHeaderValue("Bearer", _accessToken);
-
-                var responseJson = await httpClient.PostAsJsonAsync(
-                    requestUri: "https://api.dropboxapi.com/2/files/delete_v2",
-                    value: new
-                    {
-                        path = SelectedItem.Path.ToString()
-                    }
-                );
-            }
-            else
-            {
-                MessageBox.Show("Удаление отменено.");
             }
         }
 
@@ -200,6 +330,12 @@ namespace _8Lab.ViewModel
                             Path = entry["path_lower"].ToString(),
                             IsDirectory = entry[".tag"].ToString() == "folder"
                         };
+
+                        if (!item.IsDirectory)
+                        {
+                            item.Size = entry["size"].Value<long>();
+                            item.ModifiedDate = entry["client_modified"].Value<DateTime>();
+                        }
                         items.Add(item);
                     }
                 }

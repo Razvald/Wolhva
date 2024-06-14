@@ -5,8 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:_8Lab.View"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="MainWindow" Height="450" Width="800" WindowStartupLocation="CenterScreen">
+    
+    <Grid Margin="10">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -15,9 +16,10 @@
 
         <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="5">
             <Button Content="Back in folder" Command="{Binding BackCommand}" Margin="5"/>
-            <Button Content="Load Root" Command="{Binding LoadRootCommand}" Margin="5"/>
+            <Button Content="Forward in folder" Command="{Binding ForwardCommand}" Margin="5"/>
             <Button Content="Delete Selected File" Command="{Binding DeleteSelectedFileCommand}" Margin="5"/>
-            <Button Content="Add New File" Command="{Binding UploadFileCommand}" Margin="5"/>
+            <Button Content="Download Selected File" Command="{Binding DownloadFileCommand}" Margin="5"/>
+            <Button Content="Upload Selected File" Command="{Binding UploadFileCommand}" Margin="5"/>
         </StackPanel>
 
         <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="5">
@@ -28,7 +30,31 @@
             <ListBox.ItemTemplate>
                 <DataTemplate>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="{Binding Name}" />
+                        <TextBlock Text="{Binding Name}" Width="200"/>
+                        <TextBlock Text="{Binding Size, StringFormat='{}Size: {0} bytes'}" Width="200">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDirectory}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                        <TextBlock Text="{Binding ModifiedDate, StringFormat='{}Modified: {0}'}" Width="200">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsDirectory}" Value="False">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </StackPanel>
                 </DataTemplate>
             </ListBox.ItemTemplate>
